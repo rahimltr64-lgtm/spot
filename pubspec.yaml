@@ -1,5 +1,5 @@
-name: spot
-description: A professional task manager built with Flutter.
+name: anonymous_tweet
+description: تطبيق لإنشاء تغريدات مجهولة
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,10 +10,12 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.2.2
+  share_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
-dependencies:
-  flutter:
-    sdk: flutter
-  share_plus: ^10.0.0   # أو أحدث إصدار متاح
