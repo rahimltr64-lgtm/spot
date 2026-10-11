@@ -1,98 +1,131 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart'; // سنضيفه لاحقاً
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // تأكد من تهيئة Firebase هنا إذا قمت بربطه بالمشروع
-  runApp(AnonymousTweetApp());
+void main() {
+  runApp(const AnonymousTweetApp());
 }
 
 class AnonymousTweetApp extends StatelessWidget {
+  const AnonymousTweetApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'تغريدات مجهولة',
-      theme: ThemeData.dark(), // ثيم ليلي يناسب التطبيق
-      home: FeedScreen(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+        useMaterial3: true,
+      ),
+      home: const TweetScreen(),
     );
   }
 }
 
-// شاشة عرض التغريدات المجهولة
-class FeedScreen extends StatelessWidget {
-  final TextEditingController _tweetController = TextEditingController();
+class TweetScreen extends StatefulWidget {
+  const TweetScreen({super.key});
 
-  // دالة لإرسال التغريدة إلى قاعدة البيانات دون أي هوية
-  void _postTweet(String text) {
-    if (text.trim().isNotEmpty) {
-      FirebaseFirestore.instance.collection('tweets').add({
-        'content': text,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      _tweetController.clear();
+  @override
+  State<TweetScreen> createState() => _TweetScreenState();
+}
+
+class _TweetScreenState extends State<TweetScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final int maxChars = 280;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _copyToClipboard() {
+    if (_controller.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اكتب شيئاً أولاً')),
+      );
+      return;
     }
+    Clipboard.setData(ClipboardData(text: _controller.text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ التغريدة')),
+    );
+  }
+
+  void _shareTweet() {
+    if (_controller.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اكتب شيئاً أولاً')),
+      );
+      return;
+    }
+    Share.share(_controller.text);
   }
 
   @override
   Widget build(BuildContext context) {
+    final remaining = maxChars - _controller.text.length;
+
     return Scaffold(
-      appBar: AppBar(title: Text('تغريدات مجهولة 🕶️')),
-      body: Column(
-        children: [
-          // جزء كتابة التغريدة الجديدة
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
+      appBar: AppBar(
+        title: const Text('إنشاء تغريدة مجهولة'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                maxLines: null,
+                maxLength: maxChars,
+                decoration: const InputDecoration(
+                  hintText: 'اكتب تغريدتك هنا...',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              remaining >= 0
+                  ? 'متبقي: $remaining حرف'
+                  : 'تجاوزت الحد بـ ${-remaining} حرف',
+              style: TextStyle(
+                color: remaining < 0 ? Colors.red : Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _tweetController,
-                    decoration: InputDecoration(
-                      hintText: 'اكتب تغريدة مجهولة الهوية...',
-                      border: OutlineInputBorder(),
+                  child: ElevatedButton.icon(
+                    onPressed: _copyToClipboard,
+                    icon: const Icon(Icons.copy),
+                    label: const Text('نسخ'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _shareTweet,
+                    icon: const Icon(Icons.share),
+                    label: const Text('مشاركة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: () => _postTweet(_tweetController.text),
-                ),
               ],
             ),
-          ),
-          Divider(),
-          // عرض التغريدات المنشورة بشكل فوري ومتجدد
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('tweets')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-                
-                var docs = snapshot.data!.docs;
-                return ListView.builder(
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    var tweet = docs[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Icon(Icons.person_outline),
-                          backgroundColor: Colors.grey,
-                        ),
-                        title: Text('مستعمل مجهول'),
-                        subtitle: Text(tweet['content'] ?? ''),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
