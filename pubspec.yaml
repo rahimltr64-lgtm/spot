@@ -13,3 +13,7 @@ dependencies:
 
 flutter:
   uses-material-design: true
+dependencies:
+  flutter:
+    sdk: flutter
+  share_plus: ^10.0.0   # أو أحدث إصدار متاح
