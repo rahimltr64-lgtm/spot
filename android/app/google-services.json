@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:245242854608:android:54dc98d8918576065db2d5",
+        "mobilesdk_app_id": "1:245242854608:android:b00933ba365827e65db2d5",
         "android_client_info": {
-          "package_name": "com.example.anonymouschat"
+          "package_name": "com.klencod.compass"
         }
       },
       "oauth_client": [],
